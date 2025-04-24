@@ -13,8 +13,8 @@
   <!-- 🔐 登录表单 -->
   <div id="loginSection">
     <h3>登录</h3>
-    <input type="email" id="email" placeholder="邮箱"><br>
-    <input type="password" id="password" placeholder="密码"><br>
+    <input type="email" id="email" placeholder="邮箱">
+    <input type="password" id="password" placeholder="密码">
     <button onclick="login()">登录</button>
     <p id="loginStatus" style="color:red;"></p>
   </div>
@@ -44,7 +44,7 @@
 
   <script>
     const firebaseConfig = {
-      apiKey: "AIzaSyBCy7KsdjCfbVePhmGenn7Lc5vfc2oodEQ",
+      apiKey: "AIzaSyBCy7KsdjCfbVePhmGenn7Lc5vfc2oodE0",
       authDomain: "dushubiji-150ab.firebaseapp.com",
       databaseURL: "https://dushubiji-150ab-default-rtdb.firebaseio.com",
       projectId: "dushubiji-150ab",
@@ -57,7 +57,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const auth = firebase.auth();
-
     let currentUser = null;
 
     function login() {
@@ -66,9 +65,10 @@
 
       auth.signInWithEmailAndPassword(email, password)
         .then(userCred => {
+          currentUser = userCred.user;
           document.getElementById('loginSection').style.display = 'none';
           document.getElementById('addSection').style.display = 'block';
-          currentUser = userCred.user;
+          renderBooks(); // 登录后重新渲染按钮
         })
         .catch(error => {
           document.getElementById('loginStatus').innerText = '登录失败：' + error.message;
@@ -80,6 +80,7 @@
         currentUser = null;
         document.getElementById('loginSection').style.display = 'block';
         document.getElementById('addSection').style.display = 'none';
+        renderBooks(); // 退出后重新渲染按钮
       });
     }
 
@@ -87,46 +88,51 @@
       const title = document.getElementById('titleInput').value.trim();
       const author = document.getElementById('authorInput').value.trim();
       const rating = document.getElementById('ratingInput').value.trim();
+
       if (!title || !author || !rating) {
         alert('请填写所有字段');
         return;
       }
+
       const book = { title, author, rating };
       db.ref("books").push(book);
+
       document.getElementById('titleInput').value = '';
       document.getElementById('authorInput').value = '';
       document.getElementById('ratingInput').value = '';
     }
 
-    db.ref("books").on("value", snapshot => {
-      const tbody = document.querySelector('#bookTable tbody');
-      tbody.innerHTML = '';
-      const data = snapshot.val();
-      if (data) {
-        Object.entries(data).forEach(([key, book]) => {
-          const row = tbody.insertRow();
-          row.insertCell(0).innerText = book.title;
-          row.insertCell(1).innerText = book.author;
-          row.insertCell(2).innerText = book.rating;
+    function renderBooks() {
+      db.ref("books").once("value").then(snapshot => {
+        const tbody = document.querySelector('#bookTable tbody');
+        tbody.innerHTML = '';
+        const data = snapshot.val();
+        if (data) {
+          Object.entries(data).forEach(([key, book]) => {
+            const row = tbody.insertRow();
+            row.insertCell(0).innerText = book.title;
+            row.insertCell(1).innerText = book.author;
+            row.insertCell(2).innerText = book.rating;
 
-          const cell = row.insertCell(3);
-          if (currentUser) {
-            const delBtn = document.createElement("button");
-            delBtn.innerText = "删除";
-            delBtn.onclick = () => {
-              if (confirm("确认删除这本书吗？")) {
-                db.ref("books/" + key).remove();
-              }
-            };
-            cell.appendChild(delBtn);
-          } else {
-            cell.innerText = '-';
-          }
-        });
-      }
-    });
+            const cell = row.insertCell(3);
+            if (currentUser) {
+              const delBtn = document.createElement("button");
+              delBtn.innerText = "删除";
+              delBtn.onclick = () => {
+                if (confirm("确认删除这本书吗？")) {
+                  db.ref("books/" + key).remove().then(renderBooks);
+                }
+              };
+              cell.appendChild(delBtn);
+            } else {
+              cell.innerText = '-';
+            }
+          });
+        }
+      });
+    }
 
-    // 自动判断登录状态
+    // 初始化：监听登录状态 + 渲染书籍
     auth.onAuthStateChanged(user => {
       currentUser = user;
       if (user) {
@@ -136,6 +142,7 @@
         document.getElementById('loginSection').style.display = 'block';
         document.getElementById('addSection').style.display = 'none';
       }
+      renderBooks();
     });
   </script>
 </body>
