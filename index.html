@@ -2,45 +2,139 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <title>书籍记录表（带登录）</title>
+  <title>📚 我的书单</title>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+  font-family: 'Noto Sans SC', sans-serif;
+  background: #f9f9f9;
+  color: #333;
+  display: flex;           
+  justify-content: center;  
+  align-items: flex-start;  
+  min-height: 100vh;
+  padding: 2em;
+}
+    .container {
+  max-width: 800px;
+  width: 100%;
+}
+
+    h2, h3 {
+      text-align: center;
+      color: #444;
+    }
+
+    .card {
+      background: white;
+      padding: 1.5em;
+      margin-bottom: 1em;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    input, button {
+      padding: 0.5em;
+      margin: 0.3em 0.5em 0.3em 0;
+      font-size: 1em;
+    }
+
+    input {
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      background: #2d89ef;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1b6ac9;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1em;
+      font-size: 0.95em;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 0.6em;
+      text-align: center;
+    }
+
+    th {
+      background: #f0f0f0;
+    }
+
+    .delete-btn {
+      background: #e74c3c;
+      border: none;
+      padding: 5px 10px;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .delete-btn:hover {
+      background: #c0392b;
+    }
+
+    #loginStatus {
+      color: red;
+    }
+
+    @media (max-width: 600px) {
+      table, input, button {
+        font-size: 0.9em;
+      }
+    }
+  </style>
 </head>
 <body>
-  <h2>书籍记录表</h2>
+  <div class="container">
+  <h2>📚 我的书籍记录表</h2>
 
-  <!-- 🔐 登录表单 -->
-  <div id="loginSection">
+  <div class="card" id="loginSection">
     <h3>登录</h3>
     <input type="email" id="email" placeholder="邮箱">
     <input type="password" id="password" placeholder="密码">
     <button onclick="login()">登录</button>
-    <p id="loginStatus" style="color:red;"></p>
+    <p id="loginStatus"></p>
   </div>
 
-  <!-- ✅ 添加书籍（登录后可见） -->
-  <div id="addSection" style="display:none;">
+  <div class="card" id="addSection" style="display:none;">
     <h3>添加书籍</h3>
-    <label>书名: <input type="text" id="titleInput"></label>
-    <label>作者: <input type="text" id="authorInput"></label>
-    <label>评分: <input type="number" id="ratingInput" min="0" max="10" step="0.1"></label>
+    <input type="text" id="titleInput" placeholder="书名">
+    <input type="text" id="authorInput" placeholder="作者">
+    <input type="number" id="ratingInput" min="0" max="10" step="0.1" placeholder="评分">
     <button onclick="addBook()">添加</button>
-    <button onclick="logout()">退出登录</button>
+    <button onclick="logout()" style="background:#999;">退出登录</button>
   </div>
 
-  <h3>书籍列表</h3>
-  <table border="1" id="bookTable">
-    <thead>
-      <tr>
-        <th>书名</th>
-        <th>作者</th>
-        <th>评分</th>
-        <th>操作</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <div class="card">
+    <h3>📖 书籍列表</h3>
+    <table id="bookTable">
+      <thead>
+        <tr>
+          <th>书名</th>
+          <th>作者</th>
+          <th>评分</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
   <script>
     const firebaseConfig = {
@@ -68,7 +162,7 @@
           currentUser = userCred.user;
           document.getElementById('loginSection').style.display = 'none';
           document.getElementById('addSection').style.display = 'block';
-          renderBooks(); // 登录后重新渲染按钮
+          renderBooks();
         })
         .catch(error => {
           document.getElementById('loginStatus').innerText = '登录失败：' + error.message;
@@ -80,7 +174,7 @@
         currentUser = null;
         document.getElementById('loginSection').style.display = 'block';
         document.getElementById('addSection').style.display = 'none';
-        renderBooks(); // 退出后重新渲染按钮
+        renderBooks();
       });
     }
 
@@ -118,6 +212,7 @@
             if (currentUser) {
               const delBtn = document.createElement("button");
               delBtn.innerText = "删除";
+              delBtn.className = "delete-btn";
               delBtn.onclick = () => {
                 if (confirm("确认删除这本书吗？")) {
                   db.ref("books/" + key).remove().then(renderBooks);
@@ -132,7 +227,6 @@
       });
     }
 
-    // 初始化：监听登录状态 + 渲染书籍
     auth.onAuthStateChanged(user => {
       currentUser = user;
       if (user) {
@@ -145,5 +239,6 @@
       renderBooks();
     });
   </script>
+    </div>
 </body>
 </html>
