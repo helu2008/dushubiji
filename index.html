@@ -22,6 +22,11 @@
   max-width: 800px;
   width: 100%;
 }
+    .login-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 
     h2, h3 {
       text-align: center;
@@ -105,12 +110,14 @@
   <h2>📚 我的书单</h2>
 
   <div class="card" id="loginSection">
-    <h3>管理员</h3>
-    <input type="email" id="email" placeholder="邮箱">
-    <input type="password" id="password" placeholder="密码">
+  <h3>登录</h3>
+  <div class="login-form">
+    <input type="email" id="email" placeholder="邮箱"><br>
+    <input type="password" id="password" placeholder="密码"><br>
     <button onclick="login()">登录</button>
     <p id="loginStatus"></p>
   </div>
+</div>
 
   <div class="card" id="addSection" style="display:none;">
     <h3>添加书籍</h3>
