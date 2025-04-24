@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>书籍记录表（Firebase）</title>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+</head>
+<body>
+  <h2>添加书籍</h2>
+  <label>书名: <input type="text" id="titleInput"></label>
+  <label>作者: <input type="text" id="authorInput"></label>
+  <label>评分: <input type="number" id="ratingInput" min="0" max="10" step="0.1"></label>
+  <button onclick="addBook()">添加</button>
+
+  <h2>书籍列表</h2>
+  <table border="1" id="bookTable">
+    <thead>
+  <tr>
+    <th>书名</th>
+    <th>作者</th>
+    <th>评分</th>
+    <th>操作</th> <!-- 添加这一列 -->
+  </tr>
+</thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBCy7KsdjCfbVePhmGenn7Lc5vfc2oodEQ",
+    authDomain: "dushubiji-150ab.firebaseapp.com",
+    databaseURL: "https://dushubiji-150ab-default-rtdb.firebaseio.com",
+    projectId: "dushubiji-150ab",
+    storageBucket: "dushubiji-150ab.appspot.com",
+    messagingSenderId: "104080317541",
+    appId: "1:104080317541:web:d54164dd02d72834ec3c2c",
+    measurementId: "G-9MHVS38H5R"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  function addBook() {
+    const title = document.getElementById('titleInput').value.trim();
+    const author = document.getElementById('authorInput').value.trim();
+    const rating = document.getElementById('ratingInput').value.trim();
+
+    if (!title || !author || !rating) {
+      alert('请填写所有字段');
+      return;
+    }
+
+    const book = { title, author, rating };
+    db.ref("books").push(book);
+
+    document.getElementById('titleInput').value = '';
+    document.getElementById('authorInput').value = '';
+    document.getElementById('ratingInput').value = '';
+  }
+
+  db.ref("books").on("value", snapshot => {
+    const tbody = document.querySelector('#bookTable tbody');
+    tbody.innerHTML = '';
+
+    const data = snapshot.val();
+    if (data) {
+      Object.entries(data).forEach(([key, book]) => {
+        const row = tbody.insertRow();
+        row.insertCell(0).innerText = book.title;
+        row.insertCell(1).innerText = book.author;
+        row.insertCell(2).innerText = book.rating;
+
+        // 添加删除按钮
+        const deleteCell = row.insertCell(3);
+        const deleteBtn = document.createElement("button");
+        deleteBtn.innerText = "删除";
+        deleteBtn.onclick = () => {
+          if (confirm("确定要删除这本书吗？")) {
+            db.ref("books/" + key).remove();
+          }
+        };
+        deleteCell.appendChild(deleteBtn);
+      });
+    }
+  });
+</script>
+</body>
+</html>
